@@ -44,11 +44,23 @@
         }
 
         function loadParticipants() {
-            fetch("https://script.google.com/macros/s/AKfycbx6i-RE3Sdpjpf5QzcNqsHUtSk8af1Ooa52vftGcPVvJ3QViOvKAFj9QnFPDK8JiMjy/exec")
+            fetch("YOUR_SCRIPT_WEB_APP_URL")
             .then(response => response.json())
             .then(data => {
+                console.log("Fetched Participants:", data); // Debugging step
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.error("API Error: No participants found", data);
+                    document.getElementById("participants").innerHTML = "<tr><td colspan='3'>⚠️ No participants found</td></tr>";
+                    return;
+                }
+
                 let html = data.map(p => `<tr><td>${p.name}</td><td>${p.email}</td><td>${p.status}</td></tr>`).join("");
-                document.getElementById("participants").innerHTML = html || "<tr><td colspan='3'>No participants yet</td></tr>";
+                document.getElementById("participants").innerHTML = html;
+            })
+            .catch(error => {
+                console.error("Error loading participants:", error);
+                document.getElementById("participants").innerHTML = "<tr><td colspan='3'>⚠️ Error fetching data</td></tr>";
             });
         }
 
