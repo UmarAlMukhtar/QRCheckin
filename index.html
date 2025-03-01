@@ -1,107 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Event Check-in</title>
-        
-        <!-- ✅ Correct QR Scanner Library (Use this!) -->
-        <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
-        
-        <style>
-            body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-            #qr-reader { width: 300px; margin: 20px auto; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-            th { background-color: #f4f4f4; }
-        </style>
-    </head>
-    
-    <body>
-        <h2>🎟️ Event Check-in System</h2>
+<head>
+    <meta charset="UTF-8">
+    <title>Event Check-in</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.7/html5-qrcode.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        #qr-reader { width: 300px; margin: 20px auto; display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        button { padding: 10px 20px; font-size: 16px; margin-top: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>🎟️ Event Check-in System</h2>
+    <button onclick="startScanner()">Start QR Scanner</button>
+    <div id="qr-reader"></div>
+    <p id="status"></p>
 
-        <!-- QR Code Scanner -->
-        <h3>📷 Scan Ticket QR Code</h3>
-        <div id="qr-reader"></div>
-        <p id="status"></p>
+    <h3>📋 Registered Participants</h3>
+    <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Status</th></tr></thead>
+        <tbody id="participants"></tbody>
+    </table>
 
-        <!-- Registered Participants Table -->
-        <h3>📋 Registered Participants</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="participants"></tbody>
-        </table>
+    <script>
+        let qrScanner = null;
+        function startScanner() {
+            document.getElementById("qr-reader").style.display = "block"; 
+            if (qrScanner) return; 
+            qrScanner = new Html5Qrcode("qr-reader");
+            qrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
+                function onScanSuccess(qrMessage) {
+                    document.getElementById("status").innerText = "Checking in...";
+                    fetch(`https://script.google.com/macros/s/AKfycbx6i-RE3Sdpjpf5QzcNqsHUtSk8af1Ooa52vftGcPVvJ3QViOvKAFj9QnFPDK8JiMjy/exec?id=${qrMessage}`)
+                    .then(response => response.json())
+                    .then(data => { document.getElementById("status").innerText = data.message; qrScanner.stop(); })
+                    .catch(error => console.error("Error:", error));
+                },
+                function onScanError(errorMessage) { console.warn(errorMessage); }
+            );
+        }
 
-        <script>
-            window.onload = function () {
-                const qrReader = new Html5Qrcode("qr-reader");
-                
-                qrReader.start(
-                    { facingMode: "environment" },  // Use rear camera
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    function onScanSuccess(qrMessage) {
-                        document.getElementById("status").innerText = "Checking in...";
-                        
-                        fetch(`https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?id=${qrMessage}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            document.getElementById("status").innerText = data.message;
-                            loadParticipants();  // Refresh list
-                        })
-                        .catch(error => console.error("Error:", error));
-                    },
-                    function onScanError(errorMessage) {
-                        console.warn(errorMessage);  // Handle errors silently
-                    }
-                ).catch(err => console.error("QR Scanner Error:", err));
-                
-                loadParticipants();  // Load initial participant list
-            };
-
-    function loadParticipants() {
-        fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec")
-        .then(response => response.json())
-        .then(data => {
-            let html = "";
-            data.forEach(p => {
-                html += `<tr><td>${p.name}</td><td>${p.email}</td><td>${p.status}</td></tr>`;
+        function loadParticipants() {
+            fetch("https://script.google.com/macros/s/AKfycbx6i-RE3Sdpjpf5QzcNqsHUtSk8af1Ooa52vftGcPVvJ3QViOvKAFj9QnFPDK8JiMjy/exec")
+            .then(response => response.json())
+            .then(data => {
+                let html = data.map(p => `<tr><td>${p.name}</td><td>${p.email}</td><td>${p.status}</td></tr>`).join("");
+                document.getElementById("participants").innerHTML = html || "<tr><td colspan='3'>No participants yet</td></tr>";
             });
-            document.getElementById("participants").innerHTML = html;
-        });
-    }
-            function onScanSuccess(qrMessage) {
-                document.getElementById("status").innerText = "Checking in...";
-                
-                fetch(`https://script.google.com/macros/s/AKfycbwWFhR8yIhpo9gmO_OEWSoBL10nEe_YaOmvv7Fi_5wgkF0UHT9jGbE_3PXRDnvdVuWceA/exec?id=${qrMessage}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("status").innerText = data.message;
-                    loadParticipants();  // Refresh list
-                })
-                .catch(error => console.error("Error:", error));
-            }
+        }
 
-            function loadParticipants() {
-                fetch("https://script.google.com/macros/s/AKfycbwWFhR8yIhpo9gmO_OEWSoBL10nEe_YaOmvv7Fi_5wgkF0UHT9jGbE_3PXRDnvdVuWceA/exec")
-                .then(response => response.json())
-                .then(data => {
-                    let html = "";
-                    data.forEach(p => {
-                        html += `<tr><td>${p.name}</td><td>${p.email}</td><td>${p.status}</td></tr>`;
-                    });
-                    document.getElementById("participants").innerHTML = html;
-                });
-            }
-
-            var html5QrCode = new Html5Qrcode("qr-reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess);
-            
-            loadParticipants();  // Load initial list
-        </script>
-    </body>
+        window.onload = loadParticipants;
+    </script>
+</body>
 </html>
