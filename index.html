@@ -4,45 +4,64 @@
     <meta charset="UTF-8">
     <title>Event Check-in</title>
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        #qr-reader { width: 300px; margin: 20px auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+    </style>
 </head>
 <body>
-    <h2>Event Check-in</h2>
+    <h2>🎟️ Event Check-in System</h2>
+
+    <!-- QR Code Scanner -->
+    <h3>📷 Scan Ticket QR Code</h3>
     <div id="qr-reader"></div>
-    <div id="status"></div>
+    <p id="status"></p>
+
+    <!-- Registered Participants Table -->
+    <h3>📋 Registered Participants</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="participants"></tbody>
+    </table>
 
     <script>
         function onScanSuccess(qrMessage) {
             document.getElementById("status").innerText = "Checking in...";
             
-            fetch(`https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?id=${qrMessage}`)
+            fetch(`https://script.google.com/macros/s/AKfycbzeozaSXEgG3KU8BegqiTluXAlZEzjJZ8o8HqYGe_aFSaQnHzx2-h5EmYc6SNG3jhLC/exec?id=${qrMessage}`)
             .then(response => response.json())
             .then(data => {
                 document.getElementById("status").innerText = data.message;
+                loadParticipants();  // Refresh list
             })
             .catch(error => console.error("Error:", error));
         }
 
-        var html5QrCode = new Html5Qrcode("qr-reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess);
-    </script>
-
-    <div id="participants"></div>
-
-    <script>
         function loadParticipants() {
-            fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec")
+            fetch("https://script.google.com/macros/sAKfycbzeozaSXEgG3KU8BegqiTluXAlZEzjJZ8o8HqYGe_aFSaQnHzx2-h5EmYc6SNG3jhLC/exec")
             .then(response => response.json())
             .then(data => {
-                let html = "<h3>Participants</h3><ul>";
+                let html = "";
                 data.forEach(p => {
-                    html += `<li>${p.name} - ${p.email} - ${p.status}</li>`;
+                    html += `<tr><td>${p.name}</td><td>${p.email}</td><td>${p.status}</td></tr>`;
                 });
-                html += "</ul>";
                 document.getElementById("participants").innerHTML = html;
             });
         }
-        loadParticipants();
-    </script>
 
+        var html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess);
+        
+        loadParticipants();  // Load initial list
+    </script>
 </body>
 </html>
