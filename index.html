@@ -37,7 +37,7 @@
         function onScanSuccess(qrMessage) {
             document.getElementById("status").innerText = "Checking in...";
             
-            fetch(`https://script.google.com/macros/s/AKfycbzeozaSXEgG3KU8BegqiTluXAlZEzjJZ8o8HqYGe_aFSaQnHzx2-h5EmYc6SNG3jhLC/exec?id=${qrMessage}`)
+            fetch(`https://script.google.com/macros/s/AKfycbwWFhR8yIhpo9gmO_OEWSoBL10nEe_YaOmvv7Fi_5wgkF0UHT9jGbE_3PXRDnvdVuWceA/exec?id=${qrMessage}`)
             .then(response => response.json())
             .then(data => {
                 document.getElementById("status").innerText = data.message;
@@ -47,7 +47,7 @@
         }
 
         function loadParticipants() {
-            fetch("https://script.google.com/macros/sAKfycbzeozaSXEgG3KU8BegqiTluXAlZEzjJZ8o8HqYGe_aFSaQnHzx2-h5EmYc6SNG3jhLC/exec")
+            fetch("https://script.google.com/macros/s/AKfycbwWFhR8yIhpo9gmO_OEWSoBL10nEe_YaOmvv7Fi_5wgkF0UHT9jGbE_3PXRDnvdVuWceA/exec")
             .then(response => response.json())
             .then(data => {
                 let html = "";
