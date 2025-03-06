@@ -2,69 +2,149 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Event Check-in</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.7/html5-qrcode.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Verification</title>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-        #qr-reader { width: 300px; margin: 20px auto; display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #f4f4f4; }
-        button { padding: 10px 20px; font-size: 16px; margin-top: 10px; cursor: pointer; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f4f4f4;
+            display: inline-block;
+            font-size: 18px;
+        }
+        input {
+            padding: 10px;
+            width: 300px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        #qr-reader {
+            width: 300px;
+            margin: 20px auto;
+            display: none; /* Initially hidden */
+        }
+        .loading {
+            font-size: 16px;
+            color: blue;
+        }
     </style>
 </head>
 <body>
-    <h2>🎟️ Event Check-in System</h2>
-    <button onclick="startScanner()">Start QR Scanner</button>
-    <div id="qr-reader"></div>
-    <p id="status"></p>
+    <h2>Certificate Verification</h2>
 
-    <h3>📋 Registered Participants</h3>
-    <table>
-        <thead><tr><th>Name</th><th>Email</th><th>Status</th></tr></thead>
-        <tbody id="participants"></tbody>
-    </table>
+    <!-- Manual ID Entry -->
+    <input type="text" id="certID" placeholder="Enter Certificate ID">
+    <button onclick="searchCertificate()">Verify</button>
+
+    <!-- QR Code Scanner Button -->
+    <h3>Or</h3>
+    <button onclick="toggleQRScanner()">Scan QR Code</button>
+    
+    <!-- QR Scanner Container (Hidden Initially) -->
+    <div id="qr-reader"></div>
+
+    <div id="result">Enter Certificate ID or Scan QR to verify</div>
 
     <script>
-        let qrScanner = null;
-        function startScanner() {
-            document.getElementById("qr-reader").style.display = "block"; 
-            if (qrScanner) return; 
-            qrScanner = new Html5Qrcode("qr-reader");
-            qrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
-                function onScanSuccess(qrMessage) {
-                    document.getElementById("status").innerText = "Checking in...";
-                    fetch(`https://script.google.com/macros/s/AKfycbx6i-RE3Sdpjpf5QzcNqsHUtSk8af1Ooa52vftGcPVvJ3QViOvKAFj9QnFPDK8JiMjy/exec?id=${qrMessage}`)
-                    .then(response => response.json())
-                    .then(data => { document.getElementById("status").innerText = data.message; qrScanner.stop(); })
-                    .catch(error => console.error("Error:", error));
-                },
-                function onScanError(errorMessage) { console.warn(errorMessage); }
-            );
-        }
-        
-        function loadParticipants() {
-            fetch("https://script.google.com/macros/s/AKfycbx6i-RE3Sdpjpf5QzcNqsHUtSk8af1Ooa52vftGcPVvJ3QViOvKAFj9QnFPDK8JiMjy/exec") 
-            .then(response => response.json())
-            .then(data => {
-                console.log("Fetched Participants:", data); // Debugging step
+        const apiUrl = "https://script.google.com/macros/s/AKfycbw7IimiKOaR-GBOA2Zo-aj4f9XPlnFcN8MAnjSLP1TEESOX7EEWoPLLBwh_gFoJddGg/exec";
+        let qrScannerActive = false;
 
-                if (!Array.isArray(data) || data.length === 0) {
-                    console.error("API Error: No participants found", data);
-                    document.getElementById("participants").innerHTML = "<tr><td colspan='3'>⚠️ No participants found</td></tr>";
-                    return;
+        async function verifyCertificate(certID) {
+            if (!certID) {
+                document.getElementById("result").innerText = "Invalid Certificate ID";
+                return;
+            }
+
+            // Show loading message
+            document.getElementById("result").innerHTML = "<span class='loading'>🔄 Verifying...</span>";
+
+            try {
+                const response = await fetch(`${apiUrl}?id=${certID}`);
+                const data = await response.json();
+
+                if (data.name) {
+                    document.getElementById("result").innerHTML = `
+                        <h3>✅ Certificate Verified</h3>
+                        <p><strong>Name:</strong> ${data.name}</p>
+                        <p><strong>Class:</strong> ${data.class}</p>
+                        <p><strong>Event:</strong> ${data.event}</p>
+                        <p><strong>Issued on:</strong> ${data.issueDate}</p>
+                    `;
+                } else {
+                    document.getElementById("result").innerHTML = `
+                        <h3>❌ Certificate Not Found</h3>
+                        <p>Please check the Certificate ID and try again.</p>
+                    `;
                 }
+            } catch (error) {
+                console.error("Error fetching certificate data:", error);
+                document.getElementById("result").innerHTML = `
+                    <h3>⚠️ Error Fetching Data</h3>
+                    <p>Could not fetch certificate details. Please try again later.</p>
+                `;
+            }
+        }
 
-                let html = data.map(p => `<tr><td>${p.name}</td><td>${p.email}</td><td>${p.status}</td></tr>`).join("");
-                document.getElementById("participants").innerHTML = html;
-            })
-            .catch(error => {
-                console.error("Error loading participants:", error);
-                document.getElementById("participants").innerHTML = "<tr><td colspan='3'>⚠️ Error fetching data</td></tr>";
+        function searchCertificate() {
+            const certID = document.getElementById("certID").value.trim();
+            verifyCertificate(certID);
+        }
+
+        function toggleQRScanner() {
+            const qrReader = document.getElementById("qr-reader");
+
+            if (qrScannerActive) {
+                qrReader.innerHTML = ""; // Stop QR scanner
+                qrReader.style.display = "none";
+                qrScannerActive = false;
+            } else {
+                qrReader.style.display = "block";
+                startQRScanner();
+                qrScannerActive = true;
+            }
+        }
+
+        function startQRScanner() {
+            const qrReader = document.getElementById("qr-reader");
+            const html5QrCode = new Html5Qrcode("qr-reader");
+
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                qrCodeMessage => {
+                    window.location.href = `?id=${encodeURIComponent(qrCodeMessage)}`;
+                },
+                errorMessage => {
+                    console.warn(errorMessage);
+                }
+            ).catch(err => {
+                console.error("Error starting QR scanner:", err);
             });
         }
 
-        window.onload = loadParticipants;
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const certID = urlParams.get('id');
+
+            if (certID) {
+                verifyCertificate(certID);
+            }
+        };
     </script>
 </body>
 </html>
