@@ -60,6 +60,7 @@
     <script>
         const apiUrl = "https://script.google.com/macros/s/AKfycbxH7PolqjUVWBi1uYzzbeicUgynLESM_R5htSyYlQWIbdqHM7Z88LLOCumM-4nUVCyU/exec";
         let qrScannerActive = false;
+        let html5QrCode = null; // To store QR scanner instance
 
         async function verifyCertificate(certID) {
             if (!certID) {
@@ -106,10 +107,17 @@
             const qrReader = document.getElementById("qr-reader");
 
             if (qrScannerActive) {
-                qrReader.innerHTML = ""; // Stop QR scanner
-                qrReader.style.display = "none";
-                qrScannerActive = false;
+                // Stop the QR scanner and hide it
+                html5QrCode.stop().then(() => {
+                    qrReader.innerHTML = ""; // Clear scanner area
+                    qrReader.style.display = "none";
+                    qrScannerActive = false;
+                    console.log("QR Scanner Stopped");
+                }).catch(err => {
+                    console.error("Error stopping QR scanner:", err);
+                });
             } else {
+                // Start the QR scanner and show it
                 qrReader.style.display = "block";
                 startQRScanner();
                 qrScannerActive = true;
@@ -118,7 +126,7 @@
 
         function startQRScanner() {
             const qrReader = document.getElementById("qr-reader");
-            const html5QrCode = new Html5Qrcode("qr-reader");
+            html5QrCode = new Html5Qrcode("qr-reader");
 
             html5QrCode.start(
                 { facingMode: "environment" }, 
